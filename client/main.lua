@@ -1,43 +1,72 @@
 ESX = nil
 TriggerEvent(Config.ESX, function(obj) ESX = obj end)
-
------------------- Weapon Label -------------------
-Weapons = { }
-for i = 1, #Config.Weapons, 1 do
-    Weapons[i] = {
-        label = Config.Weapons[i].Label,
-        value = Config.Weapons[i].Name,
-        price = Config.Weapons[i].Price,
-        items = Config.Weapons[i].Items
+onMission = false
+Missions = {}
+for i = 1, #Config.Missions, 1 do
+    Missions[i] = {
+        label = Config.Missions[i].Label,
+        value = Config.Missions[i].Name,
+        price = Config.Missions[i].Price,
+        carname = Config.Missions[i].Car.Name,
+        carlocation = Config.Missions[i].Car.Location
     }
 end
 
 Citizen.CreateThread(function()
-        local myBlip = AddBlipForCoord(Config.Marker.x, Config.Marker.y, Config.Marker.z)
-        SetBlipSprite(myBlip, Config.Blip.id)
-        SetBlipDisplay(myBlip, 4)
-        SetBlipScale(myBlip, Config.Blip.scale)
-        SetBlipColour(myBlip, Config.Blip.color)
-        SetBlipAsShortRange(myBlip, true)
-        BeginTextCommandSetBlipName("STRING")
-        AddTextComponentString(Config.Blip.title)
-        EndTextCommandSetBlipName(myBlip)
+    CreateBlip(Config.Ped.location, Config.Blip.Home.sprite, Config.Blip.Home.color, Config.Blip.Home.title)
+    CreateBlip2(Config.Marker.location, Config.Blip.Steal.sprite, Config.Blip.Steal.color, Config.Blip.Steal
+        .title)
+    CreateNPC(Config.Ped.type, Config.Ped.model, Config.Ped.anim, Config.Ped.dict,Config.Ped.location,
+        "Press ~INPUT_CONTEXT~ to interact with ~y~NPC", { 1, 38 }, 3,
+        function()
+            Citizen.Wait(500)
+            
+            if not onMission then
+                GiveMissionMenu()
+                
+            else
+                ShowNotification('You already have a mission')
+            end
+        end,
+        function()
+        end
+    )
 end)
-
-CreateThread(function()
+Citizen.CreateThread(function()
     while true do
-        Wait(0)
-
+        DrawMarker(Config.Marker.type, Config.Marker.location.x, Config.Marker.location.y, Config.Marker.location.z, 0.0,
+            0.0, 0.0,
+            0.0, 0.0, 0.0,
+            4.0, 4.0, 0.5, Config.Marker.r, Config.Marker.g, Config.Marker.b, 255, false, true, 2, nil, nil, false)
         local pedCoords = GetEntityCoords(PlayerPedId())
-        local distance = Vdist(pedCoords.x, pedCoords.y, pedCoords.z, Config.Marker.x, Config.Marker.y, Config.Marker.z)
-        DrawMarker(Config.Marker.type, Config.Marker.x, Config.Marker.y, Config.Marker.z, 0.0, 0.0, 0.0, 0.0, 180.0, 0.0, 0.5, 0.5, 0.5, 0, 255,0, 50, false, true, 2, nil, nil, false)
-
-        if ( distance <= 1 ) then
-            ShowAlert("~b~Press ~INPUT_PICKUP~ For Start")
-            if ( distance <= 1 ) and IsControlJustReleased(0, Config.Key) then
-                GiveWeaponMenu()
+        local distance = Vdist(pedCoords.x, pedCoords.y, pedCoords.z, Config.Marker.location.x, Config.Marker.location.y,
+            Config.Marker.location.z)
+        if (distance <= 2.5) then
+            ShowAlert("~b~Press ~INPUT_PICKUP~ For Sell Car")
+            if (distance <= 2.5) and IsControlJustReleased(0, Config.Key) then
+                local ped = PlayerPedId()
+                if IsPedInVehicle(ped, MissionCar, true) then
+                    DeleteMissionCar(MissionCar)
+                    onMission=false
+                end
             end
         end
-    end 
+        Citizen.Wait(0)
+    end
 end)
 
+Citizen.CreateThread(function()
+    while true do
+        local ped = PlayerPedId()
+        if IsPedInVehicle(ped, MissionCar, true) then
+            SetNewWaypoint(Config.Marker.location.x, Config.Marker.location.y)
+            break
+        end
+        Citizen.Wait(0)
+    end
+    while true do
+        FollowBlip()
+        
+        Citizen.Wait(0)
+    end
+end)
