@@ -8,5 +8,13 @@ AddEventHandler('noelchopshop:givemoney', function(target, amount)
     amount = tonumber(amount)
     if not tonumber(amount) then return end
     amount = ESX.Math.Round(amount)
-    xPlayer.addMoney(amount)
+    if Config.Money.Cash == true then
+        xPlayer.addAccountMoney('cash', amount)
+    elseif Config.Money.Bank == true then
+        xPlayer.addAccountMoney('bank', amount)
+    elseif Config.Money.Black == true then
+        xPlayer.addAccountMoney('black_money', amount)
+    else
+        TriggerClientEvent('esx:showNotification', source, 'Set cashout way in Config.')
+    end
 end)
